@@ -11,9 +11,22 @@
 </head>
 
 <body>
+    <button onClick="onRun()">Run</button>
+    <button onClick="onSelectShape(Shapes.Rectangle)">Rectangle</button>
+    <button onClick="onSelectShape(Shapes.Triangle)">Triangle</button>
+    <button onClick="onSelectShape(Shapes.Pentagon)">Pentagon</button>
+    <button onClick="onSelectShape(Shapes.Hexagon)">Hexagon</button>
+    <div>
+        <span id="matter-render"></span>
+        <canvas id="game-canvas" width="800" height="600" style="background:  0% 0% / contain grey;">
+    </div>
+    
+    <script src="shape-templates.js"></script>
+    <script src="game-object.js"></script>
+    <script src="user-interaction-state.js"></script>
+    <script src="game-state.js"></script>
     <script src="matter.js"></script>
     <script src="game.js"></script>
-    <button onClick="onRun()">bla</button>
 </body>
 
 </html>

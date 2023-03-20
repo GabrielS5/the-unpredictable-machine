@@ -1,5 +1,4 @@
 var fps = 1000 / 60;
-var isRunning = false;
 var handledBody = null;
 var Engine = Matter.Engine,
     Render = Matter.Render,
@@ -8,15 +7,27 @@ var Engine = Matter.Engine,
     Composite = Matter.Composite,
     MouseConstraint = Matter.MouseConstraint,
     Mouse = Matter.Mouse;
+var gameObjects = [];
+
+var canvas = document.getElementById("game-canvas");
+var context = canvas.getContext("2d");
+var gameState = new GameState(context, gameObjects);
+
 
 // create an engine
 var engine = Engine.create();
 
 // create a renderer
 var render = Render.create({
-    element: document.body,
+    // canvas: document.getElementById('game-canvas')
+    element: document.getElementById('matter-render'),
     engine: engine
 });
+
+var matterCanvas = document.getElementById("matter-render").firstChild;
+matterCanvas.addEventListener('click', onClick, false);
+var matterCanvasLeft = matterCanvas.offsetLeft + matterCanvas.clientLeft;
+var matterCanvasTop = matterCanvas.offsetTop + matterCanvas.clientTop;
 
 // create two boxes and a ground
 var boxA = Bodies.rectangle(400, 200, 80, 80, {
@@ -41,6 +52,10 @@ var ground = Bodies.rectangle(400, 610, 810, 60, {
     }
 });
 
+gameState.addGameObject(boxA);
+gameState.addGameObject(boxB);
+gameState.addGameObject(ground, true);
+
 // add all of the bodies to the world
 Composite.add(engine.world, [boxA, boxB, ground]);
 var mouse = Mouse.create(render.canvas),
@@ -60,18 +75,6 @@ var mouse = Mouse.create(render.canvas),
 Composite.add(engine.world, mouseConstraint);
 render.mouse = mouse;
 
-function onRun() {
-    isRunning = !isRunning;
-    Matter.Body.setStatic(boxA, !isRunning);
-    Matter.Body.setStatic(boxB, !isRunning);
-    if (isRunning) {
-        mouseConstraint.collisionFilter.mask = 0x0000;
-    } else {
-        mouseConstraint.collisionFilter.mask = 0x0001;
-    }
-    // Matter.Body.applyForce(boxA,boxA.position, {x: 0, y: -0.2});
-}
-
 // run the renderer
 Render.run(render);
 
@@ -80,6 +83,7 @@ var runner = Runner.create();
 
 // run the engine
 window.setInterval(() => {
+    // handle drag and drop
     if (mouseConstraint.body != null) {
         handledBody = mouseConstraint.body;
         if (handledBody.isStatic) {
@@ -88,11 +92,49 @@ window.setInterval(() => {
     }
 
     if (mouseConstraint.body == null) {
-        if (handledBody != null && !isRunning) {
+        if (handledBody != null && !gameState.getIsRunning()) {
             Matter.Body.setStatic(handledBody, true);
         }
         handledBody = null;
     }
 
     Runner.tick(runner, engine, fps);
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    gameState.draw();
 }, fps)
+
+function onRun() {
+    gameState.toggleIsRunning();
+
+    if (gameState.getIsRunning()) {
+        mouseConstraint.collisionFilter.mask = 0x0000;
+    } else {
+        mouseConstraint.collisionFilter.mask = 0x0001;
+    }
+}
+
+function onSelectShape(shape) {
+    gameState.selectShape(shape);
+}
+
+function onClick(event) {
+    var shape = gameState.tryGetSelectedShape();
+    
+    if(!shape){
+        return;
+    }
+
+    var x = event.pageX - matterCanvasLeft;
+    var y = event.pageY - matterCanvasTop;
+
+    var shape = Bodies.fromVertices(x, y, ShapeTemplates.getShapeTemplate(shape), {
+        isStatic: true,
+        collisionFilter: {
+            group: 1,
+            mask: 0x0001
+        }
+    });
+
+    Composite.add(engine.world, [shape]);
+    gameState.addGameObject(shape);
+}
